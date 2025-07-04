@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
@@ -18,6 +17,7 @@ export default function RootLayout() {
           <Stack.Screen name="(farmer-tabs)" />
           <Stack.Screen name="(labour-tabs)" />
           <Stack.Screen name="profile" />
+          <Stack.Screen name="create-job-modal" options={{ presentation: 'modal' }} />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />

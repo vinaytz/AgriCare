@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Chrome as Home, MessageCircle, Briefcase, Plus } from 'lucide-react-native';
+import { Chrome as Home, MessageCircle, Briefcase } from 'lucide-react-native';
 
 export default function LabourTabsLayout() {
   const { t } = useLanguage();
@@ -49,15 +49,6 @@ export default function LabourTabsLayout() {
           title: t('dashboard.labour.chats'),
           tabBarIcon: ({ color, size }) => (
             <MessageCircle size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="create-job"
-        options={{
-          title: 'Post Job',
-          tabBarIcon: ({ color, size }) => (
-            <Plus size={size} color={color} />
           ),
         }}
       />

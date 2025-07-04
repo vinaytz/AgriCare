@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../utils/api';
 import { getCurrentLocation, requestLocationPermission, calculateDistance } from '../../utils/location';
 import { Job } from '../../types/job';
-import { User, Bell, Search, TrendingUp, Clock, MapPin, MessageCircle, DollarSign, Users } from 'lucide-react-native';
+import { User, Bell, Search, Clock, MapPin, MessageCircle, Users } from 'lucide-react-native';
 
 export default function LabourHome() {
   const router = useRouter();
@@ -23,11 +23,7 @@ export default function LabourHome() {
     { title: 'This Month', value: '₹15,000', color: '#F59E0B' },
   ];
 
-  useEffect(() => {
-    loadNearbyJobs();
-  }, []);
-
-  const loadNearbyJobs = async () => {
+  const loadNearbyJobs = useCallback(async () => {
     setLoading(true);
     try {
       const hasPermission = await requestLocationPermission();
@@ -78,7 +74,12 @@ export default function LabourHome() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadNearbyJobs();
+  }, [loadNearbyJobs]);
+    
 
   const handleMessageFarmer = (job: Job) => {
     // Navigate to chat or show message interface

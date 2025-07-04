@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { Button } from '../../components/Button';
-import { Input } from '../../components/Input';
-import { apiClient } from '../../utils/api';
-import { getCurrentLocation, requestLocationPermission } from '../../utils/location';
-import { ArrowLeft, MapPin, Calendar, DollarSign, Users, Briefcase } from 'lucide-react-native';
+import { Stack, useRouter } from 'expo-router';
+import { Button } from '../components/Button';
+import { Input } from '../components/Input';
+import { apiClient } from '../utils/api';
+import { getCurrentLocation, requestLocationPermission } from '../utils/location';
+import { X, MapPin, Calendar, Users, Briefcase } from 'lucide-react-native';
 
-export default function CreateJob() {
+export default function CreateJobModal() {
   const router = useRouter();
-  const { t } = useLanguage();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -29,11 +27,7 @@ export default function CreateJob() {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [apiError, setApiError] = useState<string>('');
 
-  useEffect(() => {
-    requestLocation();
-  }, []);
-
-  const requestLocation = async () => {
+  const requestLocation = useCallback(async () => {
     setLocationLoading(true);
     try {
       const hasPermission = await requestLocationPermission();
@@ -68,7 +62,12 @@ export default function CreateJob() {
     } finally {
       setLocationLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    requestLocation();
+  }, [requestLocation]);
+    
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -147,21 +146,16 @@ export default function CreateJob() {
     }
   };
 
-  const formatDateForInput = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
-  };
-
   const handleDateChange = (field: 'start_date' | 'end_date', value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color="#374151" />
+          <X size={24} color="#374151" />
         </TouchableOpacity>
         <Text style={styles.title}>Create Job</Text>
         <View style={{ width: 24 }} />
@@ -265,23 +259,23 @@ export default function CreateJob() {
 
           <View style={styles.dateInputContainer}>
             <Text style={styles.dateLabel}>Start Date *</Text>
-            <input
-              type="date"
-              value={formatDateForInput(formData.start_date)}
-              onChange={(e) => handleDateChange('start_date', e.target.value)}
-              style={styles.dateInput}
+            <Input
+              placeholder="YYYY-MM-DD"
+              value={formData.start_date}
+              onChangeText={(text) => handleDateChange('start_date', text)}
+              error={errors.start_date}
             />
-            {errors.start_date && <Text style={styles.errorText}>{errors.start_date}</Text>}
+            {/* TODO: Integrate a date picker here */}
           </View>
 
           <View style={styles.dateInputContainer}>
             <Text style={styles.dateLabel}>End Date (Optional)</Text>
-            <input
-              type="date"
-              value={formatDateForInput(formData.end_date)}
-              onChange={(e) => handleDateChange('end_date', e.target.value)}
-              style={styles.dateInput}
+            <Input
+              placeholder="YYYY-MM-DD"
+              value={formData.end_date}
+              onChangeText={(text) => handleDateChange('end_date', text)}
             />
+            {/* TODO: Integrate a date picker here */}
           </View>
         </View>
 
@@ -404,17 +398,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
-  },
-  dateInput: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
-    color: '#374151',
-    fontFamily: 'inherit',
   },
   createButton: {
     width: '100%',
