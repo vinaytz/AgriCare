@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage';
 import i18n from '../utils/i18n';
 
@@ -20,15 +20,20 @@ export const useLanguage = () => {
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState('en');
+  const mounted = useRef(true);
 
   useEffect(() => {
     initializeLanguage();
+    
+    return () => {
+      mounted.current = false;
+    };
   }, []);
 
   const initializeLanguage = async () => {
     try {
       const savedLanguage = await storage.getItem(STORAGE_KEYS.LANGUAGE);
-      if (savedLanguage) {
+      if (savedLanguage && mounted.current) {
         setLanguageState(savedLanguage);
         i18n.locale = savedLanguage;
       }
@@ -40,8 +45,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const setLanguage = async (newLanguage: string) => {
     try {
       await storage.setItem(STORAGE_KEYS.LANGUAGE, newLanguage);
-      setLanguageState(newLanguage);
-      i18n.locale = newLanguage;
+      
+      if (mounted.current) {
+        setLanguageState(newLanguage);
+        i18n.locale = newLanguage;
+      }
     } catch (error) {
       console.error('Set language error:', error);
     }

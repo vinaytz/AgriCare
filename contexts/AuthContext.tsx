@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { AuthState, User } from '../types/auth';
 import { storage, STORAGE_KEYS } from '../utils/storage';
 import { apiClient } from '../utils/api';
@@ -26,9 +26,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading: true,
     hasSeenLanguageSelector: false,
   });
+  
+  const mounted = useRef(true);
 
   useEffect(() => {
     initializeAuth();
+    
+    return () => {
+      mounted.current = false;
+    };
   }, []);
 
   const initializeAuth = async () => {
@@ -42,22 +48,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (token && userData) {
         const user = JSON.parse(userData);
         apiClient.setToken(token);
-        setAuthState({
-          user,
-          token,
-          isLoading: false,
-          hasSeenLanguageSelector: hasSeenLanguageSelector === 'true',
-        });
+        
+        if (mounted.current) {
+          setAuthState({
+            user,
+            token,
+            isLoading: false,
+            hasSeenLanguageSelector: hasSeenLanguageSelector === 'true',
+          });
+        }
       } else {
-        setAuthState(prev => ({
-          ...prev,
-          isLoading: false,
-          hasSeenLanguageSelector: hasSeenLanguageSelector === 'true',
-        }));
+        if (mounted.current) {
+          setAuthState(prev => ({
+            ...prev,
+            isLoading: false,
+            hasSeenLanguageSelector: hasSeenLanguageSelector === 'true',
+          }));
+        }
       }
     } catch (error) {
       console.error('Auth initialization error:', error);
-      setAuthState(prev => ({ ...prev, isLoading: false }));
+      if (mounted.current) {
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+      }
     }
   };
 
@@ -69,7 +82,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ]);
       
       apiClient.setToken(token);
-      setAuthState(prev => ({ ...prev, user, token }));
+      
+      if (mounted.current) {
+        setAuthState(prev => ({ ...prev, user, token }));
+      }
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -84,7 +100,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ]);
       
       apiClient.setToken(null);
-      setAuthState(prev => ({ ...prev, user: null, token: null }));
+      
+      if (mounted.current) {
+        setAuthState(prev => ({ ...prev, user: null, token: null }));
+      }
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -93,7 +112,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setHasSeenLanguageSelector = async (value: boolean) => {
     try {
       await storage.setItem(STORAGE_KEYS.HAS_SEEN_LANGUAGE_SELECTOR, value.toString());
-      setAuthState(prev => ({ ...prev, hasSeenLanguageSelector: value }));
+      
+      if (mounted.current) {
+        setAuthState(prev => ({ ...prev, hasSeenLanguageSelector: value }));
+      }
     } catch (error) {
       console.error('Set language selector error:', error);
     }
