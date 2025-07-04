@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useRouter } from 'expo-router';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { User, Bell, Plus, TrendingUp, Calendar, MapPin, Users } from 'lucide-react-native';
+import { User, Bell, TrendingUp, Calendar, MapPin, Users } from 'lucide-react-native';
 
 export default function FarmerHome() {
   const router = useRouter();
@@ -56,13 +56,6 @@ export default function FarmerHome() {
         <View style={styles.quickActions}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
-            <TouchableOpacity 
-              style={styles.actionCard}
-              onPress={() => router.push('/(farmer-tabs)/create-job')}
-            >
-              <Plus size={24} color="#22C55E" />
-              <Text style={styles.actionText}>Post Job</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={styles.actionCard}>
               <Users size={24} color="#3B82F6" />
               <Text style={styles.actionText}>Find Labour</Text>
@@ -74,6 +67,10 @@ export default function FarmerHome() {
             <TouchableOpacity style={styles.actionCard}>
               <MapPin size={24} color="#F59E0B" />
               <Text style={styles.actionText}>Track Work</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionCard}>
+              <TrendingUp size={24} color="#22C55E" />
+              <Text style={styles.actionText}>Analytics</Text>
             </TouchableOpacity>
           </View>
         </View>
