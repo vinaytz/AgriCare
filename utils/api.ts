@@ -32,7 +32,7 @@ export class ApiClient {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
       const response = await fetch(`${BASE_URL}${endpoint}`, {
         ...options,
@@ -43,9 +43,49 @@ export class ApiClient {
 
       clearTimeout(timeoutId);
 
+      // Handle different response types
       if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error');
-        throw new Error(`Server error (${response.status}): ${errorText}`);
+        let errorMessage = 'An error occurred';
+        
+        try {
+          // Try to parse JSON error response
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          }
+        } catch {
+          // If JSON parsing fails, try to get text
+          try {
+            const errorText = await response.text();
+            if (errorText) {
+              errorMessage = errorText;
+            }
+          } catch {
+            // If all else fails, use status-based message
+            switch (response.status) {
+              case 400:
+                errorMessage = 'Invalid request. Please check your input.';
+                break;
+              case 401:
+                errorMessage = 'Authentication failed. Please try again.';
+                break;
+              case 404:
+                errorMessage = 'Service not found. Please try again later.';
+                break;
+              case 500:
+                errorMessage = 'Server error. Please try again later.';
+                break;
+              default:
+                errorMessage = `Server error (${response.status}). Please try again.`;
+            }
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       return response.json();
@@ -59,6 +99,7 @@ export class ApiClient {
         if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
           throw new Error('Unable to connect to server - please check your internet connection');
         }
+        // Re-throw the error if it already has a meaningful message
         throw error;
       }
       
@@ -72,28 +113,28 @@ export class ApiClient {
     phone?: string;
     role: 'farmer' | 'labour';
   }) {
-    return this.request('/api/signup', {
+    return this.request('/signup', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async sendEmailOTP(email: string) {
-    return this.request('/api/login/email', {
+    return this.request('/login/email', {
       method: 'POST',
       body: JSON.stringify({ email }),
     });
   }
 
   async verifyEmailOTP(email: string, otp: string) {
-    return this.request<{ token: string }>('/api/login/email/verify', {
+    return this.request<{ token: string }>('/login/email/verify', {
       method: 'POST',
       body: JSON.stringify({ email, otp }),
     });
   }
 
   async verifyPhoneOTP(idToken: string) {
-    return this.request<{ token: string }>('/api/login/phone/verify', {
+    return this.request<{ token: string }>('/login/phone/verify', {
       method: 'POST',
       body: JSON.stringify({ id_token: idToken }),
     });

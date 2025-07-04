@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Button } from '../../components/Button';
@@ -19,6 +19,7 @@ export default function Login() {
   const [useEmail, setUseEmail] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [apiError, setApiError] = useState<string>('');
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -45,6 +46,8 @@ export default function Login() {
     if (!validateForm()) return;
 
     setLoading(true);
+    setApiError('');
+    
     try {
       if (useEmail) {
         await apiClient.sendEmailOTP(formData.email);
@@ -59,7 +62,9 @@ export default function Login() {
         },
       });
     } catch (error) {
-      Alert.alert(t('common.error'), 'Login failed. Please try again.');
+      console.error('Login error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
+      setApiError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -76,6 +81,12 @@ export default function Login() {
       </View>
 
       <View style={styles.content}>
+        {apiError ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{apiError}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.contactSection}>
           <View style={styles.contactToggle}>
             <TouchableOpacity
@@ -165,6 +176,19 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 24,
+  },
+  errorContainer: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 14,
+    textAlign: 'center',
   },
   contactSection: {
     marginBottom: 32,

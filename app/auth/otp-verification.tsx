@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -23,6 +23,7 @@ export default function OTPVerification() {
   const [resendLoading, setResendLoading] = useState(false);
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
+  const [apiError, setApiError] = useState<string>('');
 
   useEffect(() => {
     if (timer > 0) {
@@ -37,11 +38,13 @@ export default function OTPVerification() {
 
   const handleVerifyOTP = async () => {
     if (!otp.trim() || otp.length !== 6) {
-      Alert.alert(t('common.error'), 'Please enter a valid 6-digit OTP');
+      setApiError('Please enter a valid 6-digit OTP');
       return;
     }
 
     setLoading(true);
+    setApiError('');
+    
     try {
       let response;
       
@@ -71,7 +74,9 @@ export default function OTPVerification() {
         }
       }
     } catch (error) {
-      Alert.alert(t('common.error'), 'OTP verification failed. Please try again.');
+      console.error('OTP verification error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'OTP verification failed. Please try again.';
+      setApiError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -81,6 +86,8 @@ export default function OTPVerification() {
     if (!canResend) return;
 
     setResendLoading(true);
+    setApiError('');
+    
     try {
       if (email) {
         await apiClient.sendEmailOTP(email);
@@ -88,9 +95,11 @@ export default function OTPVerification() {
       
       setTimer(60);
       setCanResend(false);
-      Alert.alert(t('common.success'), 'OTP sent successfully');
+      setApiError('');
     } catch (error) {
-      Alert.alert(t('common.error'), 'Failed to resend OTP. Please try again.');
+      console.error('Resend OTP error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resend OTP. Please try again.';
+      setApiError(errorMessage);
     } finally {
       setResendLoading(false);
     }
@@ -107,6 +116,12 @@ export default function OTPVerification() {
       </View>
 
       <View style={styles.content}>
+        {apiError ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{apiError}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.otpSection}>
           <Text style={styles.subtitle}>
             {t('auth.otpSubtitle')} {email || phone}
@@ -123,14 +138,15 @@ export default function OTPVerification() {
 
           <TouchableOpacity
             onPress={handleResendOTP}
-            disabled={!canResend}
+            disabled={!canResend || resendLoading}
             style={styles.resendButton}
           >
             <Text style={[
               styles.resendText,
-              !canResend && styles.resendTextDisabled
+              (!canResend || resendLoading) && styles.resendTextDisabled
             ]}>
-              {canResend ? t('auth.resendOtp') : `${t('auth.resendOtp')} (${timer}s)`}
+              {resendLoading ? 'Sending...' : 
+               canResend ? t('auth.resendOtp') : `${t('auth.resendOtp')} (${timer}s)`}
             </Text>
           </TouchableOpacity>
         </View>
@@ -168,6 +184,19 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 24,
+  },
+  errorContainer: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 14,
+    textAlign: 'center',
   },
   otpSection: {
     marginBottom: 48,
