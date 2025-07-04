@@ -113,30 +113,60 @@ export class ApiClient {
     phone?: string;
     role: 'farmer' | 'labour';
   }) {
-    return this.request('/signup', {
+    return this.request('/api/signup', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async sendEmailOTP(email: string) {
-    return this.request('/login/email', {
+    return this.request('/api/login/email', {
       method: 'POST',
       body: JSON.stringify({ email }),
     });
   }
 
   async verifyEmailOTP(email: string, otp: string) {
-    return this.request<{ token: string }>('/login/email/verify', {
+    return this.request<{ token: string }>('/api/login/email/verify', {
       method: 'POST',
       body: JSON.stringify({ email, otp }),
     });
   }
 
   async verifyPhoneOTP(idToken: string) {
-    return this.request<{ token: string }>('/login/phone/verify', {
+    return this.request<{ token: string }>('/api/login/phone/verify', {
       method: 'POST',
       body: JSON.stringify({ id_token: idToken }),
+    });
+  }
+
+  async createJob(data: {
+    title: string;
+    description: string;
+    number_of_labourers: number;
+    required_skills?: string[];
+    latitude: number;
+    longitude: number;
+    daily_wage: number;
+    perks?: string[];
+    start_date: string;
+    end_date?: string;
+  }) {
+    return this.request('/api/job', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getNearbyJobs(latitude: number, longitude: number, k: number = 2) {
+    const params = new URLSearchParams({
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      k: k.toString(),
+    });
+    
+    return this.request<any[]>(`/api/job?${params.toString()}`, {
+      method: 'GET',
     });
   }
 }

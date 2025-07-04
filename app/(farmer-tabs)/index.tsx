@@ -56,7 +56,10 @@ export default function FarmerHome() {
         <View style={styles.quickActions}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
-            <TouchableOpacity style={styles.actionCard}>
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => router.push('/(farmer-tabs)/create-job')}
+            >
               <Plus size={24} color="#22C55E" />
               <Text style={styles.actionText}>Post Job</Text>
             </TouchableOpacity>

@@ -61,6 +61,12 @@ export default function FarmerTabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="create-job"
+        options={{
+          href: null, // Hide from tab bar
+        }}
+      />
     </Tabs>
   );
 }
