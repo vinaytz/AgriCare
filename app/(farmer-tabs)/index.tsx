@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useRouter } from 'expo-router';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { User, Bell, Plus, TrendingUp, Calendar, MapPin } from 'lucide-react-native';
+import { User, Bell, Plus, TrendingUp, Calendar, MapPin, Users } from 'lucide-react-native';
 
 export default function FarmerHome() {
   const router = useRouter();
