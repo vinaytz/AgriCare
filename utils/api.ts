@@ -31,20 +31,38 @@ export class ApiClient {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch(`${BASE_URL}${endpoint}`, {
         ...options,
         headers,
-        mode: 'cors', // Explicitly set CORS mode
+        signal: controller.signal,
+        mode: 'cors',
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`Server error (${response.status}): ${errorText}`);
       }
 
       return response.json();
     } catch (error) {
       console.error('API request failed:', error);
-      throw error;
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new Error('Request timeout - please check your internet connection');
+        }
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          throw new Error('Unable to connect to server - please check your internet connection');
+        }
+        throw error;
+      }
+      
+      throw new Error('An unexpected error occurred');
     }
   }
 

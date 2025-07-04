@@ -20,6 +20,7 @@ export default function Signup() {
   const [useEmail, setUseEmail] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [apiError, setApiError] = useState<string>('');
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -50,6 +51,8 @@ export default function Signup() {
     if (!validateForm()) return;
 
     setLoading(true);
+    setApiError('');
+    
     try {
       const signupData = {
         name: formData.name,
@@ -68,7 +71,9 @@ export default function Signup() {
         },
       });
     } catch (error) {
-      Alert.alert(t('common.error'), 'Signup failed. Please try again.');
+      console.error('Signup error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Signup failed. Please try again.';
+      setApiError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -85,6 +90,12 @@ export default function Signup() {
       </View>
 
       <View style={styles.content}>
+        {apiError ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{apiError}</Text>
+          </View>
+        ) : null}
+
         <Input
           label={t('common.name')}
           placeholder={t('auth.enterName')}
@@ -182,6 +193,19 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 24,
+  },
+  errorContainer: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 14,
+    textAlign: 'center',
   },
   contactSection: {
     marginBottom: 32,
