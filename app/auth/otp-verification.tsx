@@ -6,7 +6,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { apiClient } from '../../utils/api';
+import { PhoneAuthService } from '../../utils/firebase';
 import { ArrowLeft } from 'lucide-react-native';
+import { Platform } from 'react-native';
 
 export default function OTPVerification() {
   const router = useRouter();
@@ -25,6 +27,8 @@ export default function OTPVerification() {
   const [canResend, setCanResend] = useState(false);
   const [apiError, setApiError] = useState<string>('');
 
+  const isPhoneAuth = !!phone;
+
   useEffect(() => {
     if (timer > 0) {
       const interval = setInterval(() => {
@@ -35,6 +39,20 @@ export default function OTPVerification() {
       setCanResend(true);
     }
   }, [timer]);
+
+  useEffect(() => {
+    // Initialize Firebase reCAPTCHA for web if using phone auth
+    if (isPhoneAuth && Platform.OS === 'web') {
+      PhoneAuthService.initializeRecaptcha();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (isPhoneAuth) {
+        PhoneAuthService.cleanup();
+      }
+    };
+  }, [isPhoneAuth]);
 
   const handleVerifyOTP = async () => {
     if (!otp.trim() || otp.length !== 6) {
@@ -49,11 +67,17 @@ export default function OTPVerification() {
       let response;
       
       if (email) {
+        // Email OTP verification
         response = await apiClient.verifyEmailOTP(email, otp);
       } else if (phone) {
-        // For phone verification, we would need to handle Firebase auth
-        // For now, we'll simulate it
-        response = await apiClient.verifyPhoneOTP('dummy_firebase_token');
+        // Phone OTP verification with Firebase
+        if (Platform.OS !== 'web') {
+          setApiError('Phone authentication requires a development build. Please use email authentication.');
+          return;
+        }
+        
+        const idToken = await PhoneAuthService.verifyOTP(otp);
+        response = await apiClient.verifyPhoneOTP(idToken);
       }
 
       if (response?.token) {
@@ -91,6 +115,13 @@ export default function OTPVerification() {
     try {
       if (email) {
         await apiClient.sendEmailOTP(email);
+      } else if (phone) {
+        if (Platform.OS !== 'web') {
+          setApiError('Phone authentication requires a development build. Please use email authentication.');
+          return;
+        }
+        
+        await PhoneAuthService.sendOTP(phone);
       }
       
       setTimer(60);
@@ -159,6 +190,9 @@ export default function OTPVerification() {
           style={styles.verifyButton}
         />
       </View>
+
+      {/* reCAPTCHA container for web phone auth */}
+      {isPhoneAuth && Platform.OS === 'web' && <div id="recaptcha-container"></div>}
     </View>
   );
 }

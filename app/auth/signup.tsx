@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { apiClient } from '../../utils/api';
+import { PhoneAuthService } from '../../utils/firebase';
 import { ArrowLeft, Mail, Phone } from 'lucide-react-native';
+import { Platform } from 'react-native';
 
 export default function Signup() {
   const router = useRouter();
@@ -21,6 +23,18 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [apiError, setApiError] = useState<string>('');
+
+  useEffect(() => {
+    // Initialize Firebase reCAPTCHA for web
+    if (Platform.OS === 'web') {
+      PhoneAuthService.initializeRecaptcha();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      PhoneAuthService.cleanup();
+    };
+  }, []);
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -38,8 +52,8 @@ export default function Signup() {
     } else {
       if (!formData.phone.trim()) {
         newErrors.phone = 'Phone number is required';
-      } else if (!/^\+?[\d\s\-\(\)]{10,}$/.test(formData.phone)) {
-        newErrors.phone = 'Phone number is invalid';
+      } else if (!/^\+[\d\s\-\(\)]{10,}$/.test(formData.phone)) {
+        newErrors.phone = 'Phone number must include country code (e.g., +91 9876543210)';
       }
     }
 
@@ -61,6 +75,19 @@ export default function Signup() {
       };
 
       await apiClient.signup(signupData);
+      
+      // Send OTP after successful signup
+      if (useEmail) {
+        await apiClient.sendEmailOTP(formData.email);
+      } else {
+        // Handle phone authentication with Firebase
+        if (Platform.OS !== 'web') {
+          setApiError('Phone authentication requires a development build. Please use email authentication or create a development build.');
+          return;
+        }
+        
+        await PhoneAuthService.sendOTP(formData.phone);
+      }
       
       // Navigate to OTP verification
       router.push({
@@ -139,7 +166,7 @@ export default function Signup() {
           ) : (
             <Input
               label={t('common.phone')}
-              placeholder={t('auth.enterPhone')}
+              placeholder="+91 9876543210"
               value={formData.phone}
               onChangeText={(text) => setFormData({ ...formData, phone: text })}
               keyboardType="phone-pad"
@@ -168,6 +195,9 @@ export default function Signup() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* reCAPTCHA container for web */}
+      {Platform.OS === 'web' && <div id="recaptcha-container"></div>}
     </View>
   );
 }
