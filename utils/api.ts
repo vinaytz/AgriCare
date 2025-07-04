@@ -23,6 +23,7 @@ export class ApiClient {
   ): Promise<T> {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       ...options.headers,
     };
 
@@ -32,13 +33,14 @@ export class ApiClient {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // Increased to 30 seconds
 
       const response = await fetch(`${BASE_URL}${endpoint}`, {
         ...options,
         headers,
         signal: controller.signal,
         mode: 'cors',
+        credentials: 'omit', // Don't send cookies for CORS requests
       });
 
       clearTimeout(timeoutId);
@@ -88,22 +90,32 @@ export class ApiClient {
         throw new Error(errorMessage);
       }
 
-      return response.json();
+      // Check if response has content before parsing JSON
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return response.json();
+      } else {
+        // If not JSON, return empty object or handle accordingly
+        return {} as T;
+      }
     } catch (error) {
       console.error('API request failed:', error);
       
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          throw new Error('Request timeout - please check your internet connection');
+          throw new Error('Request timeout - please check your internet connection and try again');
         }
-        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-          throw new Error('Unable to connect to server - please check your internet connection');
+        if (error.message.includes('Failed to fetch') || 
+            error.message.includes('NetworkError') ||
+            error.message.includes('ERR_NETWORK') ||
+            error.message.includes('ERR_INTERNET_DISCONNECTED')) {
+          throw new Error('Unable to connect to server. Please check:\n1. Your internet connection\n2. Server availability\n3. Firewall settings');
         }
         // Re-throw the error if it already has a meaningful message
         throw error;
       }
       
-      throw new Error('An unexpected error occurred');
+      throw new Error('An unexpected error occurred while connecting to the server');
     }
   }
 
